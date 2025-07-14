@@ -1,0 +1,7 @@
+streamlit
+transformers
+torch
+spacy
+stanza
+spacy-transformers
+sentence-transformers
