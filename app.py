@@ -50,11 +50,14 @@ Bienvenue dans cette application interactive de reconnaissance d'entités nommé
 # Chargement des modèles
 # ---------------------------
 
+from transformers import CamembertTokenizer, CamembertForTokenClassification
+
 @st.cache_resource
 def load_camembert_pipeline():
-    tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner", use_fast=False)
-    model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
+    tokenizer = CamembertTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
+    model = CamembertForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
     return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+
 
 @st.cache_resource
 def load_spacy_model():
