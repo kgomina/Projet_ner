@@ -1,126 +1,53 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import spacy
 import stanza
-
-# ---------------------------
-# Configuration visuelle
-# ---------------------------
-st.set_page_config(
-    page_title="NER Presse 🇫🇷",
-    page_icon="📍",
-    layout="centered"
-)
-
-st.markdown("""
-<style>
-.big-title {
-    font-size: 36px;
-    font-weight: bold;
-    color: #1f77b4;
-}
-.entity-badge {
-    display: inline-block;
-    background-color: #f0f0f0;
-    color: #333;
-    border-radius: 0.5rem;
-    padding: 0.4rem 0.7rem;
-    margin: 0.2rem;
-    font-size: 16px;
-    font-weight: 500;
-    border-left: 5px solid #00cc99;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="big-title">📍 NER - Extraction d’entités nommées dans la presse</div>', unsafe_allow_html=True)
-
-st.markdown("""
-Bienvenue dans cette application interactive de reconnaissance d'entités nommées (**NER**) sur des textes en **français**.
-
-🧠 Modèles disponibles :
-- 🤗 CamemBERT (HuggingFace)
-- 🧪 spaCy (`fr_core_news_md`)
-- 🔎 Stanza (`fr`)
-
----
-""", unsafe_allow_html=True)
-
-# ---------------------------
-# Chargement des modèles
-# ---------------------------
+from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+from seqeval.metrics import classification_report
 
 @st.cache_resource
-def load_camembert_pipeline():
+def load_models():
+    # spaCy
+    nlp_spacy = spacy.load("fr_core_news_md")
+
+    # Stanza
+    stanza.download("fr")
+    nlp_stanza = stanza.Pipeline("fr")
+
+    # CamemBERT (HuggingFace)
     tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
     model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
-    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    hf_pipeline = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-@st.cache_resource
-def load_spacy_model():
-    return spacy.load("fr_core_news_md")
+    return nlp_spacy, nlp_stanza, hf_pipeline
 
-@st.cache_resource
-def load_stanza_model():
-    stanza.download("fr")
-    return stanza.Pipeline(lang="fr", processors="tokenize,ner")
+nlp_spacy, nlp_stanza, hf_pipeline = load_models()
 
-camembert_pipeline = load_camembert_pipeline()
-spacy_model = load_spacy_model()
-stanza_model = load_stanza_model()
+st.title("📌 Reconnaissance d'entités nommées (NER) avec modèles NLP français")
 
-# ---------------------------
-# Interface utilisateur
-# ---------------------------
+text_input = st.text_area("✍️ Entrez une phrase :", "Emmanuel Macron est le président de la République française.")
+model_choice = st.selectbox("🧠 Choisissez un modèle NER :", ["spaCy", "Stanza", "CamemBERT (HuggingFace)"])
 
-with st.expander("💬 Exemple de texte", expanded=False):
-    st.markdown("""
-    ```
-    Emmanuel Macron s'est rendu à Bruxelles pour une réunion de l'Union Européenne.
-    Le président de TotalEnergies a rencontré les dirigeants de l’ONU à Genève.
-    ```
-    """)
+if st.button("🔍 Analyser"):
+    st.markdown("### Résultats")
 
-text_input = st.text_area("✏️ Entrez un texte en français", height=200)
+    if model_choice == "spaCy":
+        doc = nlp_spacy(text_input)
+        for ent in doc.ents:
+            st.markdown(f"- **{ent.text}** → *{ent.label_}*")
 
-model_choice = st.selectbox("🧠 Choisissez un modèle NER", [
-    "CamemBERT (HuggingFace)",
-    "spaCy",
-    "Stanza"
-])
+    elif model_choice == "Stanza":
+        doc = nlp_stanza(text_input)
+        for sent in doc.sentences:
+            for ent in sent.ents:
+                st.markdown(f"- **{ent.text}** → *{ent.type}*")
 
-if st.button("🚀 Extraire les entités"):
-    st.markdown("---")
-    st.subheader("📌 Résultats :")
+    else:  # CamemBERT (HuggingFace)
+        results = hf_pipeline(text_input)
+        for ent in results:
+            st.markdown(f"- **{ent['word']}** → *{ent['entity_group']}*")
 
-    if not text_input.strip():
-        st.warning("Veuillez saisir un texte pour extraire les entités.")
-    else:
-        with st.spinner("Analyse en cours..."):
-            if model_choice == "CamemBERT (HuggingFace)":
-                results = camembert_pipeline(text_input)
-                entities = [(ent['word'], ent['entity_group']) for ent in results]
+    st.success("Analyse terminée ✅")
 
-            elif model_choice == "spaCy":
-                doc = spacy_model(text_input)
-                entities = [(ent.text, ent.label_) for ent in doc.ents]
-
-            elif model_choice == "Stanza":
-                doc = stanza_model(text_input)
-                entities = [(ent.text, ent.type) for sent in doc.sentences for ent in sent.ents]
-
-            else:
-                entities = []
-
-        if entities:
-            st.success(f"✅ {len(entities)} entité(s) détectée(s) :")
-            for ent, label in entities:
-                st.markdown(
-                    f'<span class="entity-badge">🟢 <strong>{ent}</strong> — <em>{label}</em></span>',
-                    unsafe_allow_html=True
-                )
-        else:
-            st.info("Aucune entité détectée dans le texte.")
 
 # ---------------------------
 # Pied de page

@@ -1,6 +1,11 @@
 streamlit
-transformers
-torch
 spacy
 stanza
+transformers
+torch
+seqeval
+scikit-learn
+matplotlib
+seaborn
+wordcloud
 sentencepiece
