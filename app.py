@@ -1,8 +1,6 @@
 import streamlit as st
 import spacy
 import stanza
-import transformers
-from transformers import logging    
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
@@ -17,9 +15,9 @@ def load_stanza():
     return stanza.Pipeline(lang="fr", processors="tokenize,ner")
 
 @st.cache_resource
-def load_camembert():
-    tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
-    model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
+def load_bert():
+    tokenizer = AutoTokenizer.from_pretrained("gilf/french-camembert-ner")
+    model = AutoModelForTokenClassification.from_pretrained("gilf/french-camembert-ner")
     return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 # Interface utilisateur
@@ -28,7 +26,7 @@ st.write("Saisissez une phrase en français pour détecter les entités nommées
 
 text = st.text_area("✍️ Entrez votre phrase ici :", "Emmanuel Macron est le président de la République française.")
 
-model_choice = st.selectbox("🧠 Choisir le modèle NER :", ["spaCy", "Stanza", "CamemBERT (HuggingFace)"])
+model_choice = st.selectbox("🧠 Choisir le modèle NER :", ["spaCy", "Stanza", "BERT (HuggingFace)"])
 
 if st.button("🔍 Analyser"):
     if model_choice == "spaCy":
@@ -49,11 +47,10 @@ if st.button("🔍 Analyser"):
             bio_tags = [f"{word.text} -> {word.ner}" for word in sentence.words]
             st.code("\n".join(bio_tags))
 
-    elif model_choice == "CamemBERT (HuggingFace)":
-        ner_pipe = load_camembert()
+    elif model_choice == "BERT (HuggingFace)":
+        ner_pipe = load_bert()
         results = ner_pipe(text)
-        st.markdown("### 📄 Résultat CamemBERT")
+        st.markdown("### 📄 Résultat BERT")
         for ent in results:
             st.write(f"{ent['word']} ➜ {ent['entity_group']} ({ent['score']:.2f})")
         st.code("\n".join([f"{ent['word']} -> B-{ent['entity_group']}" for ent in results]))
-
