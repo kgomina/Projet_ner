@@ -1,57 +1,57 @@
 import streamlit as st
 import spacy
 import stanza
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from seqeval.metrics import classification_report
+from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+
+# Chargement des modèles
+@st.cache_resource
+def load_spacy():
+    return spacy.load("fr_core_news_md")
 
 @st.cache_resource
-def load_models():
-    # spaCy
-    nlp_spacy = spacy.load("fr_core_news_md")
-
-    # Stanza
+def load_stanza():
     stanza.download("fr")
-    nlp_stanza = stanza.Pipeline("fr")
+    return stanza.Pipeline(lang="fr", processors="tokenize,ner")
 
-    # CamemBERT (HuggingFace)
+@st.cache_resource
+def load_camembert():
     tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
     model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
-    hf_pipeline = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-    return nlp_spacy, nlp_stanza, hf_pipeline
+# Interface utilisateur
+st.title("📌 Démonstration de NER (Reconnaissance d’Entités Nommées)")
+st.write("Saisissez une phrase en français pour détecter les entités nommées avec le modèle de votre choix.")
 
-nlp_spacy, nlp_stanza, hf_pipeline = load_models()
+text = st.text_area("✍️ Entrez votre phrase ici :", "Emmanuel Macron est le président de la République française.")
 
-st.title("📌 Reconnaissance d'entités nommées (NER) avec modèles NLP français")
-
-text_input = st.text_area("✍️ Entrez une phrase :", "Emmanuel Macron est le président de la République française.")
-model_choice = st.selectbox("🧠 Choisissez un modèle NER :", ["spaCy", "Stanza", "CamemBERT (HuggingFace)"])
+model_choice = st.selectbox("🧠 Choisir le modèle NER :", ["spaCy", "Stanza", "CamemBERT (HuggingFace)"])
 
 if st.button("🔍 Analyser"):
-    st.markdown("### Résultats")
-
     if model_choice == "spaCy":
-        doc = nlp_spacy(text_input)
+        nlp = load_spacy()
+        doc = nlp(text)
+        st.markdown("### 📄 Résultat spaCy")
         for ent in doc.ents:
-            st.markdown(f"- **{ent.text}** → *{ent.label_}*")
+            st.write(f"{ent.text} ➜ {ent.label_}")
+        st.code(" ".join([f"{token.text} -> {token.ent_iob_}-{token.ent_type_ if token.ent_type_ else 'O'}" for token in doc]))
 
     elif model_choice == "Stanza":
-        doc = nlp_stanza(text_input)
-        for sent in doc.sentences:
-            for ent in sent.ents:
-                st.markdown(f"- **{ent.text}** → *{ent.type}*")
+        nlp = load_stanza()
+        doc = nlp(text)
+        st.markdown("### 📄 Résultat Stanza")
+        for sentence in doc.sentences:
+            for ent in sentence.ents:
+                st.write(f"{ent.text} ➜ {ent.type}")
+            bio_tags = [f"{word.text} -> {word.ner}" for word in sentence.words]
+            st.code("\n".join(bio_tags))
 
-    else:  # CamemBERT (HuggingFace)
-        results = hf_pipeline(text_input)
+    elif model_choice == "CamemBERT (HuggingFace)":
+        ner_pipe = load_camembert()
+        results = ner_pipe(text)
+        st.markdown("### 📄 Résultat CamemBERT")
         for ent in results:
-            st.markdown(f"- **{ent['word']}** → *{ent['entity_group']}*")
+            st.write(f"{ent['word']} ➜ {ent['entity_group']} ({ent['score']:.2f})")
+        st.code("\n".join([f"{ent['word']} -> B-{ent['entity_group']}" for ent in results]))
 
-    st.success("Analyse terminée ✅")
-
-
-# ---------------------------
-# Pied de page
-# ---------------------------
-st.markdown("---")
-st.markdown("🧪 *Projet NER réalisé dans le cadre du Master IA - NLP*")
-st.markdown("📄 *Sources : [HuggingFace](https://huggingface.co/), [spaCy](https://spacy.io/), [Stanza](https://stanfordnlp.github.io/stanza/)*")

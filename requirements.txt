@@ -1,11 +1,6 @@
-streamlit
-spacy
-stanza
-transformers
+streamlit==1.35.0
+spacy==3.7.2
+stanza==1.8.1
+transformers==4.41.1
 torch
-seqeval
-scikit-learn
-matplotlib
-seaborn
-wordcloud
 sentencepiece
