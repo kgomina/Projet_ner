@@ -1,7 +1,7 @@
-streamlit
-transformers
-torch
+transformers>=4.39.0
+tokenizers>=0.15.0
+torch>=2.0.0
 spacy
 stanza
-spacy-transformers
-sentence-transformers
+streamlit
+sentence-transformers>=2.2.2
