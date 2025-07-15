@@ -1,11 +1,6 @@
-transformers>=4.39.0
-tokenizers>=0.15.0
-torch>=2.0.0
+streamlit
+transformers
+torch
 spacy
 stanza
-streamlit
-sentence-transformers>=2.2.2
 sentencepiece
-protobuf<4.0.0  # pour stanza
-# Pour éviter les problèmes de compatibilité avec protobuf
-protobuf<4.25.0  # pour transformers

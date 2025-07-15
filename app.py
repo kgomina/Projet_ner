@@ -50,14 +50,11 @@ Bienvenue dans cette application interactive de reconnaissance d'entités nommé
 # Chargement des modèles
 # ---------------------------
 
-from transformers import CamembertTokenizer, CamembertForTokenClassification
-
 @st.cache_resource
 def load_camembert_pipeline():
-    tokenizer = CamembertTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
-    model = CamembertForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
+    tokenizer = AutoTokenizer.from_pretrained("Jean-Baptiste/camembert-ner")
+    model = AutoModelForTokenClassification.from_pretrained("Jean-Baptiste/camembert-ner")
     return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
-
 
 @st.cache_resource
 def load_spacy_model():
@@ -119,7 +116,7 @@ if st.button("🚀 Extraire les entités"):
             st.success(f"✅ {len(entities)} entité(s) détectée(s) :")
             for ent, label in entities:
                 st.markdown(
-                    f'<span class="entity-badge">🔹 <strong>{ent}</strong> — <em>{label}</em></span>',
+                    f'<span class="entity-badge">🟢 <strong>{ent}</strong> — <em>{label}</em></span>',
                     unsafe_allow_html=True
                 )
         else:
@@ -128,7 +125,6 @@ if st.button("🚀 Extraire les entités"):
 # ---------------------------
 # Pied de page
 # ---------------------------
-
 st.markdown("---")
 st.markdown("🧪 *Projet NER réalisé dans le cadre du Master IA - NLP*")
-st.markdown("📄 *Source des modèles : [HuggingFace](https://huggingface.co/), [spaCy](https://spacy.io/), [Stanza](https://stanfordnlp.github.io/stanza/)*")
+st.markdown("📄 *Sources : [HuggingFace](https://huggingface.co/), [spaCy](https://spacy.io/), [Stanza](https://stanfordnlp.github.io/stanza/)*")
