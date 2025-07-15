@@ -1,6 +1,8 @@
 import streamlit as st
 import spacy
 import stanza
+import transformers
+from transformers import logging    
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
